@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cellar Tasks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0e;
+    --surface: #1a1a18;
+    --surface2: #222220;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+    --text: #e8e6e0;
+    --text-muted: #888880;
+    --text-dim: #444440;
+    --amber: #e8a020;
+    --amber-bg: rgba(232,160,32,0.12);
+    --amber-border: rgba(232,160,32,0.25);
+    --green: #4caf7d;
+    --green-bg: rgba(76,175,125,0.1);
+    --green-border: rgba(76,175,125,0.25);
+    --blue: #5b9bd5;
+    --blue-bg: rgba(91,155,213,0.1);
+    --blue-border: rgba(91,155,213,0.25);
+    --red-bg: rgba(224,112,96,0.1);
+    --red: #e07060;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* ── CONFIG BANNER ── */
+  .config-bar {
+    background: var(--amber-bg); border-bottom: 1px solid var(--amber-border);
+    padding: 10px 1.25rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .config-bar label { font-size: 12px; color: var(--amber); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .config-bar input {
+    flex: 1; min-width: 200px; background: rgba(0,0,0,.3); border: 1px solid var(--amber-border);
+    border-radius: 6px; padding: 5px 10px; font-size: 12px; color: var(--text);
+    font-family: 'DM Mono', monospace; outline: none;
+  }
+  .config-bar button {
+    padding: 5px 14px; border-radius: 6px; background: var(--amber); color: #0f0f0e;
+    border: none; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 1.25rem 1.25rem .75rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { width: 34px; height: 34px; border-radius: 8px; background: var(--amber); display: flex; align-items: center; justify-content: center; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: #0f0f0e; flex-shrink: 0; }
+  .header-title { font-size: 15px; font-weight: 500; }
+  .header-date { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .sync-status { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); }
+  .sync-status.synced .sync-dot { background: var(--green); }
+  .sync-status.syncing .sync-dot { background: var(--amber); animation: pulse 1s infinite; }
+  .sync-status.error .sync-dot { background: var(--red); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── NAME SELECT SCREEN ── */
+  .name-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; padding: 2rem 1.25rem; gap: 1rem;
+  }
+  .name-screen h2 { font-size: 18px; font-weight: 400; color: var(--text-muted); }
+  .name-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; width: 100%; max-width: 320px; margin-top: .5rem; }
+  .name-btn {
+    padding: 1rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border-strong);
+    color: var(--text); font-size: 15px; font-weight: 500; cursor: pointer; text-align: center;
+    transition: all .15s; font-family: 'DM Sans', sans-serif;
+  }
+  .name-btn:hover { background: var(--surface2); border-color: var(--amber); color: var(--amber); }
+
+  /* ── MAIN APP ── */
+  .app-wrap { display: none; }
+  .person-header {
+    padding: .75rem 1.25rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .person-name { font-size: 14px; font-weight: 500; }
+  .change-btn { font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; margin-left: auto; }
+  .change-btn:hover { color: var(--text); }
+
+  .main { padding: 1rem 1.25rem; max-width: 680px; margin: 0 auto; }
+
+  .prog-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
+  .prog-wrap { flex: 1; height: 4px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
+  .prog-fill { height: 100%; background: var(--amber); border-radius: 999px; transition: width .4s; }
+  .prog-lbl { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+  .section { margin-bottom: 1.25rem; }
+  .section-hd { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+  .task-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
+    cursor: pointer; transition: all .15s; -webkit-tap-highlight-color: transparent;
+  }
+  .task-card:active { transform: scale(0.99); }
+  .task-card:hover { border-color: var(--border-strong); background: var(--surface2); }
+  .task-card.done { opacity: .4; }
+  .task-card.done .task-name { text-decoration: line-through; }
+  .task-card.ref-card { cursor: default; opacity: .6; }
+  .task-card.ref-card:hover { background: var(--surface); border-color: var(--border); transform: none; }
+
+  .cb { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-strong); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all .15s; font-size: 12px; color: transparent; }
+  .task-card.done .cb { background: var(--green); border-color: var(--green); color: #fff; }
+
+  .task-fv { font-family: 'DM Mono', monospace; font-size: 10px; margin-bottom: 3px; padding: 2px 7px; border-radius: 4px; display: inline-block; }
+  .fv-normal { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .fv-brink { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .fv-brew { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+
+  .task-name { font-size: 13.5px; line-height: 1.5; color: var(--text); }
+  .task-assignees { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  .chip { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--text-muted); font-family: 'DM Mono', monospace; }
+  .chip.me { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+
+  .all-done { background: var(--green-bg); border: 1px solid var(--green-border); border-radius: 12px; padding: 1.25rem; text-align: center; margin-top: 1rem; }
+  .all-done p { color: var(--green); font-size: 14px; font-weight: 500; }
+  .all-done span { font-size: 12px; color: var(--text-muted); margin-top: 3px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="config-bar" id="config-bar">
+  <label>APPS SCRIPT URL:</label>
+  <input type="text" id="script-url" placeholder="Paste your Google Apps Script web app URL here…" oninput="saveConfig()" />
+  <button onclick="hideConfig()">Save</button>
+</div>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="logo">FV</div>
+    <div>
+      <div class="header-title">Cellar tasks</div>
+      <div class="header-date" id="date-lbl"></div>
+    </div>
+  </div>
+  <div class="sync-status" id="sync-status"><div class="sync-dot"></div><span id="sync-txt">not connected</span></div>
+</div>
+
+<!-- NAME SELECT -->
+<div class="name-screen" id="name-screen">
+  <h2>Who are you?</h2>
+  <div class="name-grid" id="name-grid"></div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app-wrap" id="app-wrap">
+  <div class="person-header">
+    <div class="logo" style="width:28px;height:28px;font-size:11px" id="person-logo"></div>
+    <span class="person-name" id="person-name-lbl"></span>
+    <button class="change-btn" onclick="changePerson()">change ›</button>
+  </div>
+  <div class="main">
+    <div class="prog-row">
+      <div class="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div class="prog-lbl" id="prog-lbl">0 / 0</div>
+    </div>
+    <div id="task-area"></div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const SCRIPT_URL_KEY = 'cellar_script_url';
+const PERSON_KEY = 'cellar_person';
+const today = new Date();
+const dateKey = today.toISOString().split('T')[0];
+document.getElementById('date-lbl').textContent = today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+let scriptUrl = localStorage.getItem(SCRIPT_URL_KEY) || '';
+document.getElementById('script-url').value = scriptUrl;
+if (scriptUrl) document.getElementById('config-bar').style.display = 'none';
+
+function saveConfig() { scriptUrl = document.getElementById('script-url').value.trim(); localStorage.setItem(SCRIPT_URL_KEY, scriptUrl); }
+function hideConfig() { saveConfig(); if (scriptUrl) document.getElementById('config-bar').style.display = 'none'; renderAll(); }
+
+// ── TASKS ────────────────────────────────────────────────────────────────────
+const TASKS = [
+  { fv:'FV5',   task:'GRAVITY + HARVEST? + DRY HOP',              assigned:['SHAWN','MIKE','MARC'], type:'fv' },
+  { fv:'FV6',   task:'GRAVITY + 22C E/O/D + TRUB',                assigned:['SHAWN','TUCKER'],      type:'fv' },
+  { fv:'FV7',   task:'BUBBLE',                                     assigned:['MARC'],                type:'fv' },
+  { fv:'FV8',   task:'GRAVITY + 22C E/O/D + TRUB',                assigned:['SHAWN','TUCKER'],      type:'fv' },
+  { fv:'FV9',   task:'BUBBLE',                                     assigned:['MARC'],                type:'fv' },
+  { fv:'FV10',  task:'GRAVITY',                                    assigned:['SHAWN'],               type:'fv' },
+  { fv:'FV15',  task:'DUMP + 1/2 CRASH',                          assigned:['MARC'],                type:'fv' },
+  { fv:'FV16',  task:'BREW 40 DIABLO HAZY IIPA',                  assigned:[],                      type:'brew' },
+  { fv:'FV17',  task:'GRAVITY + HARVEST? + DRY HOP',              assigned:['SHAWN','MIKE','MARC'], type:'fv' },
+  { fv:'FV18',  task:'DUMP + 1/2 CRASH',                          assigned:['MARC'],                type:'fv' },
+  { fv:'FV19',  task:'BREW 20 GOODY TWO SHOES HAZY 7 DAY D.H.',   assigned:[],                      type:'brew' },
+  { fv:'BRINKS',task:'7 FT BRINK X 1 — HOT KILL',                 assigned:['MARC','TUCKER'],       type:'brink' },
+];
+const PEOPLE = ['SHAWN','MIKE','MARC','TUCKER'];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let currentPerson = localStorage.getItem(PERSON_KEY) || '';
+const localDone = JSON.parse(localStorage.getItem('cellar_done_'+dateKey) || '{}');
+
+function saveDone() { localStorage.setItem('cellar_done_'+dateKey, JSON.stringify(localDone)); }
+function taskId(t) { return t.fv + '||' + t.task; }
+
+// ── SYNC ─────────────────────────────────────────────────────────────────────
+function setSyncStatus(state, txt) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status ' + state;
+  document.getElementById('sync-txt').textContent = txt;
+}
+
+async function syncCheck(person, id, checked) {
+  if (!scriptUrl) return;
+  setSyncStatus('syncing', 'syncing…');
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ person, taskId: id, checked, date: dateKey })
+    });
+    setSyncStatus('synced', 'synced');
+    setTimeout(() => setSyncStatus('synced', 'connected'), 2000);
+  } catch(e) {
+    setSyncStatus('error', 'sync error');
+  }
+}
+
+async function loadServerState() {
+  if (!scriptUrl || !currentPerson) return;
+  try {
+    setSyncStatus('syncing', 'loading…');
+    const r = await fetch(scriptUrl + '?action=get&person=' + encodeURIComponent(currentPerson) + '&date=' + dateKey);
+    const data = await r.json();
+    if (data.done) {
+      Object.assign(localDone, data.done);
+      saveDone();
+    }
+    setSyncStatus('synced', 'connected');
+  } catch(e) {
+    setSyncStatus('error', 'offline — local only');
+  }
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderNameScreen();
+  if (currentPerson) showApp();
+  else showNameScreen();
+}
+
+function renderNameScreen() {
+  document.getElementById('name-grid').innerHTML = PEOPLE.map(n =>
+    `<button class="name-btn" onclick="selectPerson('${n}')">${n}</button>`
+  ).join('');
+}
+
+function showNameScreen() {
+  document.getElementById('name-screen').style.display = 'flex';
+  document.getElementById('app-wrap').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('app-wrap').style.display = 'block';
+  document.getElementById('person-logo').textContent = currentPerson.slice(0,2);
+  document.getElementById('person-name-lbl').textContent = currentPerson;
+  renderTasks();
+  loadServerState().then(() => renderTasks());
+}
+
+function selectPerson(name) {
+  currentPerson = name;
+  localStorage.setItem(PERSON_KEY, name);
+  showApp();
+}
+
+function changePerson() {
+  currentPerson = '';
+  localStorage.removeItem(PERSON_KEY);
+  showNameScreen();
+}
+
+function renderTasks() {
+  const p = currentPerson;
+  const myTasks = TASKS.filter(t => t.type !== 'brew' && (t.assigned.includes(p) || t.assigned.length === 0));
+  const brewTasks = TASKS.filter(t => t.type === 'brew');
+
+  const checkable = myTasks;
+  const doneCount = checkable.filter(t => localDone[taskId(t)]).length;
+  const total = checkable.length;
+  const pct = total ? Math.round(doneCount / total * 100) : 0;
+
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-lbl').textContent = doneCount + ' / ' + total;
+
+  const fvTasks = myTasks.filter(t => t.type === 'fv');
+  const brinkTasks = myTasks.filter(t => t.type === 'brink');
+
+  let html = '';
+
+  if (fvTasks.length) {
+    html += '<div class="section"><div class="section-hd">Fermenter tasks</div>';
+    fvTasks.forEach(t => { html += cardHTML(t, p, false); });
+    html += '</div>';
+  }
+  if (brinkTasks.length) {
+    html += '<div class="section"><div class="section-hd">Brinks to hot kill</div>';
+    brinkTasks.forEach(t => { html += cardHTML(t, p, false); });
+    html += '</div>';
+  }
+  if (brewTasks.length) {
+    html += '<div class="section"><div class="section-hd">Brewing today (reference)</div>';
+    brewTasks.forEach(t => { html += cardHTML(t, p, true); });
+    html += '</div>';
+  }
+  if (doneCount === total && total > 0) {
+    const nm = p.charAt(0) + p.slice(1).toLowerCase();
+    html += `<div class="all-done"><p>All done!</p><span>Great work, ${nm}.</span></div>`;
+  }
+
+  document.getElementById('task-area').innerHTML = html;
+}
+
+function cardHTML(t, person, isRef) {
+  const id = taskId(t);
+  const isDone = !!localDone[id];
+  const fvCls = t.type === 'brew' ? 'fv-brew' : t.type === 'brink' ? 'fv-brink' : 'fv-normal';
+  const chips = t.assigned.length
+    ? t.assigned.map(n => `<span class="chip${n===person?' me':''}">${n}</span>`).join('')
+    : `<span class="chip" style="color:var(--text-dim)">shared</span>`;
+  const onclick = isRef ? '' : `onclick="toggle('${esc(id)}')"`;
+  return `<div class="task-card${isDone?' done':''}${isRef?' ref-card':''}" ${onclick}>
+    ${!isRef ? `<div class="cb">${isDone?'✓':''}</div>` : ''}
+    <div style="flex:1;min-width:0">
+      <div><span class="task-fv ${fvCls}">${t.fv}</span></div>
+      <div class="task-name">${t.task}</div>
+      <div class="task-assignees">${chips}</div>
+    </div>
+  </div>`;
+}
+
+function toggle(id) {
+  localDone[id] = !localDone[id];
+  saveDone();
+  renderTasks();
+  syncCheck(currentPerson, id, localDone[id]);
+}
+
+function esc(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+renderAll();
+</script>
+</body>
+</html>
