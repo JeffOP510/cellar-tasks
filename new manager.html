@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cellar Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f0f0e;--surface:#1a1a18;--surface2:#222220;--border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.15);--text:#e8e6e0;--text-muted:#888880;--text-dim:#444440;--amber:#e8a020;--amber-bg:rgba(232,160,32,0.12);--amber-border:rgba(232,160,32,0.25);--green:#4caf7d;--green-bg:rgba(76,175,125,0.1);--green-border:rgba(76,175,125,0.25);--blue:#5b9bd5;--blue-bg:rgba(91,155,213,0.1);--blue-border:rgba(91,155,213,0.25);--red:#e07060;--red-bg:rgba(224,112,96,0.1);--red-border:rgba(224,112,96,0.25);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  .header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .header-left{display:flex;align-items:center;gap:12px;}
+  .logo{width:34px;height:34px;border-radius:8px;background:var(--amber);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:#0f0f0e;}
+  .header-title{font-size:15px;font-weight:500;}
+  .header-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .header-right{display:flex;align-items:center;gap:10px;}
+  .refresh-btn{padding:6px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border-strong);color:var(--text);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .refresh-btn:hover{background:var(--surface);}
+  .last-refresh{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .main{padding:1.5rem;max-width:1100px;margin:0 auto;}
+  .status-bar{border-radius:8px;padding:10px 14px;margin-bottom:1.5rem;font-family:'DM Mono',monospace;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);}
+  .status-bar.ok{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+  .status-bar.error{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+  .overall-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.75rem;}
+  .overall-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;}
+  .overall-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+  .overall-val{font-size:28px;font-weight:300;}
+  .overall-val.green{color:var(--green);}
+  .overall-val.amber{color:var(--amber);}
+  .overall-val.red{color:var(--red);}
+  .overall-sub{font-size:12px;color:var(--text-muted);margin-top:3px;}
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:1.75rem;}
+  .person-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .person-card.complete{border-color:var(--green-border);}
+  .person-card-header{padding:.875rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .person-avatar{width:30px;height:30px;border-radius:8px;background:var(--surface2);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--text-muted);flex-shrink:0;}
+  .person-card.complete .person-avatar{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+  .person-card-name{font-size:14px;font-weight:500;}
+  .person-card-pct{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-muted);margin-left:auto;}
+  .person-card.complete .person-card-pct{color:var(--green);}
+  .person-prog-wrap{height:3px;background:var(--surface2);}
+  .person-prog-fill{height:100%;background:var(--amber);transition:width .5s;}
+  .person-card.complete .person-prog-fill{background:var(--green);}
+  .person-tasks{padding:.75rem 1rem;}
+  .mini-task{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+  .mini-task:last-child{border-bottom:none;}
+  .mini-cb{width:14px;height:14px;border-radius:50%;border:1px solid var(--border-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .mini-task.done .mini-cb{background:var(--green);border-color:var(--green);color:#fff;}
+  .mini-task.done .mini-name{text-decoration:line-through;color:var(--text-dim);}
+  .mini-fv{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);flex-shrink:0;width:42px;}
+  .mini-name{font-size:12px;color:var(--text-muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mini-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);flex-shrink:0;}
+  .section-hd{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .task-table{width:100%;border-collapse:collapse;}
+  .task-table th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);}
+  .task-table td{font-size:12.5px;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  .task-table tr:hover td{background:var(--surface2);}
+  .task-table tr.brew-row td{opacity:.5;}
+  .fv-tag{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:4px;display:inline-block;}
+  .fv-tag.fv{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border);}
+  .fv-tag.brink{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border);}
+  .fv-tag.brew{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
+  .check-cell{display:flex;align-items:center;justify-content:center;}
+  .check-icon{width:16px;height:16px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .check-icon.done{background:var(--green);border-color:var(--green);color:#fff;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">MGR</div>
+    <div>
+      <div class="header-title">Cellar dashboard</div>
+      <div class="header-sub" id="date-lbl"></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="last-refresh" id="last-refresh"></span>
+    <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+  </div>
+</div>
+<div class="main">
+  <div id="status-bar" class="status-bar">Loading…</div>
+  <div class="overall-grid" id="overall-grid"></div>
+  <div class="people-grid" id="people-grid"></div>
+  <div class="section-hd">All tasks — full breakdown</div>
+  <table class="task-table">
+    <thead><tr>
+      <th>FV</th><th>Task</th><th>Assigned</th>
+      <th style="text-align:center">SHAWN</th>
+      <th style="text-align:center">MIKE</th>
+      <th style="text-align:center">MARC</th>
+      <th style="text-align:center">TUCKER</th>
+      <th>Completed at</th>
+    </tr></thead>
+    <tbody id="task-tbody"></tbody>
+  </table>
+</div>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPaouqOx2y_mNoh090W1yZALSBNjgn4ot1O8ZB-qOfu1fWfCCpFQcl1FZuRUfLOwos/exec';
+const PEOPLE = ['SHAWN','MIKE','MARC','TUCKER'];
+const TASKS = [
+  {fv:'FV5',  task:'GRAVITY + HARVEST? + DRY HOP',           assigned:['SHAWN','MIKE','MARC'],type:'fv'},
+  {fv:'FV6',  task:'GRAVITY + 22C E/O/D + TRUB',             assigned:['SHAWN','TUCKER'],     type:'fv'},
+  {fv:'FV7',  task:'BUBBLE',                                  assigned:['MARC'],               type:'fv'},
+  {fv:'FV8',  task:'GRAVITY + 22C E/O/D + TRUB',             assigned:['SHAWN','TUCKER'],     type:'fv'},
+  {fv:'FV9',  task:'BUBBLE',                                  assigned:['MARC'],               type:'fv'},
+  {fv:'FV10', task:'GRAVITY',                                 assigned:['SHAWN'],              type:'fv'},
+  {fv:'FV15', task:'DUMP + 1/2 CRASH',                       assigned:['MARC'],               type:'fv'},
+  {fv:'FV16', task:'BREW 40 DIABLO HAZY IIPA',               assigned:[],                     type:'brew'},
+  {fv:'FV17', task:'GRAVITY + HARVEST? + DRY HOP',           assigned:['SHAWN','MIKE','MARC'],type:'fv'},
+  {fv:'FV18', task:'DUMP + 1/2 CRASH',                       assigned:['MARC'],               type:'fv'},
+  {fv:'FV19', task:'BREW 20 GOODY TWO SHOES HAZY 7 DAY D.H.',assigned:[],                     type:'brew'},
+  {fv:'BRINKS',task:'7 FT BRINK X 1 — HOT KILL',             assigned:['MARC','TUCKER'],      type:'brink'},
+];
+
+const today = new Date();
+const dateKey = today.toISOString().split('T')[0];
+document.getElementById('date-lbl').textContent = today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+let serverData = {};
+
+function setStatus(msg,type){
+  const el=document.getElementById('status-bar');
+  el.textContent=msg;
+  el.className='status-bar'+(type?' '+type:'');
+}
+
+function loadData(){
+  setStatus('Loading…');
+  document.getElementById('last-refresh').textContent='loading…';
+  const old=document.getElementById('_jsonp');
+  if(old) old.remove();
+  const cb='_cb'+Date.now();
+  window[cb]=function(data){
+    delete window[cb];
+    const s=document.getElementById('_jsonp');
+    if(s) s.remove();
+    if(data&&data.completions){
+      serverData=data.completions;
+      // Always use latest row per person+task — overwrite is handled server-side
+      const count=Object.keys(serverData).length;
+      setStatus('✓ Loaded — '+count+' team member'+(count!==1?'s':'')+' checked in today','ok');
+      renderDashboard();
+      document.getElementById('last-refresh').textContent='updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    } else {
+      setStatus('Connected — no check-ins yet today','');
+      renderDashboard();
+    }
+  };
+  const s=document.createElement('script');
+  s.id='_jsonp';
+  s.onerror=function(){
+    delete window[cb];
+    setStatus('Error loading. Make sure Apps Script is deployed as "Anyone" can access.','error');
+    document.getElementById('last-refresh').textContent='failed';
+  };
+  s.src=SCRIPT_URL+'?action=getAll&date='+encodeURIComponent(dateKey)+'&callback='+cb;
+  document.head.appendChild(s);
+}
+
+function isDone(person,task){
+  const id=task.fv+'||'+task.task;
+  return !!(serverData[person]&&serverData[person][id]&&serverData[person][id].checked);
+}
+function doneTime(person,task){
+  const id=task.fv+'||'+task.task;
+  return(serverData[person]&&serverData[person][id]&&serverData[person][id].timestamp)||'';
+}
+
+function renderDashboard(){
+  const checkable=TASKS.filter(t=>t.type!=='brew');
+  let totalDone=0,totalPossible=0;
+  const personStats={};
+  PEOPLE.forEach(p=>{
+    const myTasks=checkable.filter(t=>t.assigned.includes(p)||t.assigned.length===0);
+    const done=myTasks.filter(t=>isDone(p,t)).length;
+    personStats[p]={total:myTasks.length,done};
+    totalDone+=done;totalPossible+=myTasks.length;
+  });
+  const overallPct=totalPossible?Math.round(totalDone/totalPossible*100):0;
+  const complete=PEOPLE.filter(p=>personStats[p].done===personStats[p].total&&personStats[p].total>0).length;
+  document.getElementById('overall-grid').innerHTML=`
+    <div class="overall-card"><div class="overall-label">Overall progress</div><div class="overall-val ${overallPct===100?'green':overallPct>50?'amber':'red'}">${overallPct}%</div><div class="overall-sub">${totalDone} of ${totalPossible} tasks done</div></div>
+    <div class="overall-card"><div class="overall-label">Team complete</div><div class="overall-val ${complete===PEOPLE.length?'green':'amber'}">${complete}/${PEOPLE.length}</div><div class="overall-sub">people finished</div></div>
+    <div class="overall-card"><div class="overall-label">Remaining</div><div class="overall-val ${totalPossible-totalDone===0?'green':'red'}">${totalPossible-totalDone}</div><div class="overall-sub">tasks left</div></div>
+    <div class="overall-card"><div class="overall-label">Today</div><div class="overall-val" style="font-size:16px;padding-top:4px">${today.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div><div class="overall-sub">${today.toLocaleDateString('en-US',{weekday:'long'})}</div></div>`;
+  document.getElementById('people-grid').innerHTML=PEOPLE.map(p=>{
+    const st=personStats[p];
+    const pct=st.total?Math.round(st.done/st.total*100):0;
+    const myTasks=checkable.filter(t=>t.assigned.includes(p)||t.assigned.length===0);
+    const isComplete=st.done===st.total&&st.total>0;
+    const miniRows=myTasks.map(t=>{
+      const done=isDone(p,t),time=doneTime(p,t);
+      return`<div class="mini-task${done?' done':''}"><div class="mini-cb">${done?'✓':''}</div><div class="mini-fv">${t.fv}</div><div class="mini-name">${t.task}</div>${time?`<div class="mini-time">${time}</div>`:''}</div>`;
+    }).join('');
+    return`<div class="person-card${isComplete?' complete':''}"><div class="person-card-header"><div class="person-avatar">${p.slice(0,2)}</div><div class="person-card-name">${p}</div><div class="person-card-pct">${st.done}/${st.total} · ${pct}%</div></div><div class="person-prog-wrap"><div class="person-prog-fill" style="width:${pct}%"></div></div><div class="person-tasks">${miniRows}</div></div>`;
+  }).join('');
+  document.getElementById('task-tbody').innerHTML=TASKS.map(t=>{
+    const isBrew=t.type==='brew';
+    const tagCls=t.type==='brew'?'brew':t.type==='brink'?'brink':'fv';
+    const assigned=t.assigned.length?t.assigned.join(', '):'shared';
+    const checkCells=PEOPLE.map(p=>{
+      const relevant=t.assigned.includes(p)||t.assigned.length===0;
+      if(!relevant||isBrew) return'<td style="text-align:center;color:var(--text-dim)">–</td>';
+      const done=isDone(p,t);
+      return`<td style="text-align:center"><div class="check-cell"><div class="check-icon ${done?'done':''}">${done?'✓':''}</div></div></td>`;
+    }).join('');
+    const times=PEOPLE.map(p=>doneTime(p,t)).filter(Boolean);
+    return`<tr${isBrew?' class="brew-row"':''}><td><span class="fv-tag ${tagCls}">${t.fv}</span></td><td>${t.task}</td><td style="color:var(--text-muted)">${assigned}</td>${checkCells}<td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">${times[0]||''}</td></tr>`;
+  }).join('');
+}
+
+loadData();
+setInterval(loadData,30000);
+</script>
+</body>
+</html>
